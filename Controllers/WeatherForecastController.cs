@@ -25,6 +25,7 @@ namespace backend.Controllers
         private static readonly FormOptions _defaultFormOptions = new FormOptions();
         private readonly string[] _permittedExtensions = { ".txt", ".png", ".avi", ".mov", ".mpg" };
         private readonly long _fileSizeLimit = 1024 * 1024;
+        private FFMPEG ffmpeg = new FFMPEG();
         private static readonly string[] Summaries = new[]
         {
             "Freezing", "Bracing", "Chilly", "Cool", "Mild", "Warm", "Balmy", "Hot", "Sweltering", "Scorching"
@@ -53,24 +54,24 @@ namespace backend.Controllers
 
         [HttpPost]
         [DisableFormValueModelBinding]
-        public IActionResult UploadPhysical(IFormFile image)
+        public IActionResult UploadPhysical(IFormFile video)
         {
-
-            //await FileHelpers.SaveStream(Request.BodyReader.AsStream(),Request.ContentLength.GetValueOrDefault(0),"/Users/kpolunin/trash/1.png");
-
-            if (image != null)
+            if (video != null)
             {
-
+                var id = Guid.NewGuid().ToString();
                 //Set Key Name
-                string ImageName = Guid.NewGuid().ToString() + Path.GetExtension(image.FileName);
+                string ImageName = id + Path.GetExtension(video.FileName);
 
                 //Get url To Save
-                string SavePath = Path.Combine("/Users/kpolunin/trash/", ImageName);
+                string savePath = Path.Combine("/Users/kpolunin/trash/", ImageName);
+                string framesOut = Path.Combine("/Users/kpolunin/trash/", id);
 
-                using (var stream = new FileStream(SavePath, FileMode.Create))
+                using (var stream = new FileStream(savePath, FileMode.Create))
                 {
-                    image.CopyTo(stream);
+                    video.CopyTo(stream);
                 }
+                ffmpeg.ToFrames(savePath, framesOut);
+                ffmpeg.FromFrames(framesOut,framesOut);
             }
 
             return Created(nameof(VideoController), "OK");
