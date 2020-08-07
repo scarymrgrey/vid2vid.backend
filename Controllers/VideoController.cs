@@ -1,20 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Globalization;
 using System.IO;
 using System.Linq;
-using System.Net;
-using System.Text;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.Features;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Mvc.ModelBinding;
-using Microsoft.AspNetCore.WebUtilities;
-using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
-using Microsoft.Net.Http.Headers;
-using Utilities;
 
 namespace backend.Controllers
 {
@@ -23,7 +15,8 @@ namespace backend.Controllers
     public class VideoController : ControllerBase
     {
         private static readonly FormOptions _defaultFormOptions = new FormOptions();
-        private readonly string[] _permittedExtensions = { ".txt", ".png", ".avi", ".mov", ".mpg" };
+        private readonly string[] _permittedExtensions = { ".txt", ".png", ".avi", ".mov", ".mpg", ".mp4" };
+        private string fileStoragePath = "/Users/kpolunin/trash/";
         private readonly long _fileSizeLimit = 1024 * 1024;
         private FFMPEG ffmpeg = new FFMPEG();
         private static readonly string[] Summaries = new[]
@@ -52,29 +45,54 @@ namespace backend.Controllers
             .ToArray();
         }
 
+        //[Produces("application/json")]
+        //[Consumes("application/binary")]
         [HttpPost]
         [DisableFormValueModelBinding]
-        public IActionResult UploadPhysical(IFormFile video)
+        public async Task<IActionResult> UploadPhysical(IFormFile video)
         {
-            if (video != null)
-            {
-                var id = Guid.NewGuid().ToString();
-                //Set Key Name
-                string ImageName = id + Path.GetExtension(video.FileName);
+            if (video == null)
+                return BadRequest("Input cannot be empty");
 
-                //Get url To Save
-                string savePath = Path.Combine("/Users/kpolunin/trash/", ImageName);
-                string framesOut = Path.Combine("/Users/kpolunin/trash/", id);
+            var id = Guid.NewGuid().ToString();
+            var fileExt = Path.GetExtension(video.FileName) ?? ".mp4";
 
-                using (var stream = new FileStream(savePath, FileMode.Create))
-                {
-                    video.CopyTo(stream);
-                }
-                ffmpeg.ToFrames(savePath, framesOut);
-                ffmpeg.FromFrames(framesOut,framesOut);
-            }
+            var inputVideoName = "input" + fileExt;
 
-            return Created(nameof(VideoController), "OK");
+            var framesOut = Path.Combine(fileStoragePath, id, "00000");
+            var inputVideoPath = Path.Combine(framesOut, inputVideoName);
+
+            using (var stream = new FileStream(inputVideoPath, FileMode.CreateNew))
+                video.CopyTo(stream);
+
+            ffmpeg.ToFrames(inputVideoPath, framesOut);
+            var outputFile = framesOut + "/output.mp4";
+            ffmpeg.FromFrames(framesOut, outputFile);
+
+            return Created("/video/" + id, id);
+        }
+
+        [HttpGet("{id}")]
+        public async Task<IActionResult> GetVideo(string id)
+        {
+            var outputFile = Path.Combine(fileStoragePath, id, "output.mp4");
+            return PhysicalFile(outputFile, "video/mp4", enableRangeProcessing: true);
+        }
+
+        private async Task<IActionResult> download(string filename)
+        {
+            if (filename == null)
+                return Content("filename not present");
+
+            var path = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", filename);
+
+            var memory = new MemoryStream();
+            using (var stream = new FileStream(path, FileMode.Open))
+                await stream.CopyToAsync(memory);
+
+            memory.Position = 0;
+
+            return File(memory, "video/mp4", Path.GetFileName(path));
         }
     }
 }

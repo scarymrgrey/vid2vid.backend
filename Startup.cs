@@ -28,6 +28,7 @@ namespace backend
         public void ConfigureServices(IServiceCollection services)
         {
             services.AddControllers();
+            services.AddCors();
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
@@ -50,13 +51,16 @@ namespace backend
             });
 
 
-            app.UseHsts();
+            //app.UseHsts();
 
-            app.UseHttpsRedirection();
+            //app.UseHttpsRedirection();
 
             app.UseRouting();
 
-            app.UseAuthorization();
+            //app.UseAuthorization();
+
+            app.UseCors(builder =>
+            builder.AllowAnyHeader().AllowAnyOrigin().AllowAnyMethod());
 
             app.UseEndpoints(endpoints =>
             {

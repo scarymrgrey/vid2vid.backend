@@ -14,8 +14,9 @@ public class FFMPEG
 
     public void FromFrames(string inputPath,string outputPath)
     {
-        var cmd = $"ffmpeg -r {ratio} -i {inputPath}/%03d.png -c:v libx264 -vf fps=25 -pix_fmt yuv420p {outputPath}/out.mp4";
-        Directory.CreateDirectory(outputPath);
+        var path = Path.GetDirectoryName(outputPath);
+        var cmd = $"ffmpeg -r {ratio} -i {inputPath}/%03d.png -c:v libx264 -vf fps=25 -pix_fmt yuv420p {outputPath}";
+        Directory.CreateDirectory(path);
         cli.Bash(cmd);
     }
 }
