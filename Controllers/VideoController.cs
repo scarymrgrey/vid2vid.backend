@@ -16,9 +16,9 @@ namespace backend.Controllers
     {
         private static readonly FormOptions _defaultFormOptions = new FormOptions();
         private readonly string[] _permittedExtensions = { ".txt", ".png", ".avi", ".mov", ".mpg", ".mp4" };
-        private string fileStoragePath = "/Users/kpolunin/trash/";
+        private string fileStoragePath = "/tmp/vid2vid/";
         private readonly long _fileSizeLimit = 1024 * 1024;
-        private FFMPEG ffmpeg = new FFMPEG();
+        private Vid2VidService vid2VidService = new Vid2VidService();
         private static readonly string[] Summaries = new[]
         {
             "Freezing", "Bracing", "Chilly", "Cool", "Mild", "Warm", "Balmy", "Hot", "Sweltering", "Scorching"
@@ -59,15 +59,14 @@ namespace backend.Controllers
 
             var inputVideoName = "input" + fileExt;
 
-            var framesOut = Path.Combine(fileStoragePath, id, "00000");
-            var inputVideoPath = Path.Combine(framesOut, inputVideoName);
-
+            var rootPath = Path.Combine(fileStoragePath, id);
+            var inputVideoPath = Path.Combine(rootPath, inputVideoName);
+            Directory.CreateDirectory(rootPath);
             using (var stream = new FileStream(inputVideoPath, FileMode.CreateNew))
                 video.CopyTo(stream);
 
-            ffmpeg.ToFrames(inputVideoPath, framesOut);
-            var outputFile = framesOut + "/output.mp4";
-            ffmpeg.FromFrames(framesOut, outputFile);
+            var outputFilePath = rootPath + "/output.mp4";
+            vid2VidService.Translate(inputVideoPath,outputFilePath);
 
             return Created("/video/" + id, id);
         }
