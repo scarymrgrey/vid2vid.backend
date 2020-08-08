@@ -1,8 +1,0 @@
-{
-  "runtimeOptions": {
-    "additionalProbingPaths": [
-      "/home/scary/.dotnet/store/|arch|/|tfm|",
-      "/home/scary/.nuget/packages"
-    ]
-  }
-}
